@@ -16,6 +16,9 @@ const refs = {
   stopButton: $("stopButton"),
   clearLogButton: $("clearLogButton"),
   adapterInput: $("adapterInput"),
+  brokerInput: $("brokerInput"),
+  mqttDeviceInput: $("mqttDeviceInput"),
+  transportGroup: $("transportGroup"),
   modeGroup: $("modeGroup"),
   deviceList: $("deviceList"),
   stateText: $("stateText"),
@@ -56,8 +59,19 @@ refs.scanButton.addEventListener("click", async () => {
   }
 });
 
+refs.transportGroup.addEventListener("selected", () => {
+  renderTransport();
+  updateStartButton();
+});
+refs.transportGroup.addEventListener("change", () => {
+  renderTransport();
+  updateStartButton();
+});
+refs.brokerInput.addEventListener("input", updateStartButton);
+
 refs.startButton.addEventListener("click", async () => {
-  if (!state.audio || !state.selectedDevice) {
+  const transport = refs.transportGroup.selected === "mqtt" ? "mqtt" : "ble";
+  if (!state.audio || (transport === "ble" && !state.selectedDevice)) {
     updateStartButton();
     return;
   }
@@ -66,10 +80,13 @@ refs.startButton.addEventListener("click", async () => {
     state.running = true;
     setRunningUi(true);
     await api.startAudio({
-      device: state.selectedDevice.id,
+      transport,
+      device: state.selectedDevice?.id || "",
       inputPath: state.audio.path,
       mode: refs.modeGroup.selected === "pi" ? "pi" : "watermark",
       adapter: refs.adapterInput.value || "hci0",
+      broker: refs.brokerInput.value || "mqtt://192.168.1.10:1883",
+      deviceId: refs.mqttDeviceInput.value || "live2d-atri",
     });
     setStateText("发送中");
   } catch (error) {
@@ -125,7 +142,9 @@ function renderDevices() {
 }
 
 function updateStartButton() {
-  refs.startButton.disabled = !state.audio || !state.selectedDevice || state.running;
+  const transport = refs.transportGroup.selected === "mqtt" ? "mqtt" : "ble";
+  const transportReady = transport === "mqtt" ? Boolean(refs.brokerInput.value) : Boolean(state.selectedDevice);
+  refs.startButton.disabled = !state.audio || !transportReady || state.running;
 }
 
 function setRunningUi(running) {
@@ -171,6 +190,12 @@ function resetStats() {
     outstanding: 0,
     controllerBudget: 0,
   });
+}
+
+function renderTransport() {
+  const transport = refs.transportGroup.selected === "mqtt" ? "mqtt" : "ble";
+  document.querySelector(".device-panel").dataset.transport = transport;
+  setStateText(transport === "mqtt" ? "等待音频和 MQTT broker" : "等待音频和蓝牙设备");
 }
 
 function setStateText(text) {
@@ -227,4 +252,5 @@ function escapeHtml(value) {
 }
 
 resetStats();
+renderTransport();
 updateStartButton();

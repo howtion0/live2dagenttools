@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "transport": "mqtt",
+  "mode": "pi",
+  "broker": "mqtt://192.168.167.73:1883",
+  "deviceId": "live2d-atri",
+  "bytes": 8387334,
+  "packets": 46597,
+  "durationSeconds": 263.55114474499715,
+  "averageBytesPerSecond": 31824.31253757327,
+  "statusUpdates": 2051,
+  "finalFree": 131072,
+  "finalFill": 0,
+  "finalReceived": 8387334,
+  "finalRead": 8387334,
+  "highWater": 66780,
+  "drainComplete": true,
+  "metrics": "experiments/audio-flow/03-mqtt-pi-paced-full.csv"
+}

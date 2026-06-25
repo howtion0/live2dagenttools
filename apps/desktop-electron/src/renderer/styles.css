@@ -153,6 +153,32 @@ wired-progress {
   padding: 2px 6px 2px 2px;
 }
 
+.device-panel wired-radio-group {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.mqtt-fields {
+  display: none;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.device-panel[data-transport="mqtt"] .row,
+.device-panel[data-transport="mqtt"] .device-list {
+  display: none;
+}
+
+.device-panel[data-transport="mqtt"] .mqtt-fields {
+  display: grid;
+}
+
+.device-panel[data-transport="mqtt"] wired-input {
+  width: 100%;
+}
+
 .device {
   width: 100%;
   color: var(--ink);

@@ -1,6 +1,6 @@
 # live2dagenttools
 
-Version: `1.0.0-pid`
+Version: `1.1`
 
 Live2D Agent 的跨平台交互工具集。目标是把“控制 ESP32 Live2D 设备”的业务逻辑写成可复用 TypeScript 内核，再按平台替换 transport：
 
@@ -153,6 +153,14 @@ Electron 只作为桌面壳，不用于 Android。桌面端可以复用 UI、协
 npm run desktop:dev
 ```
 
+桌面端 `1.1` 已加入 wired-elements 风格 GUI：
+
+- 选择本机音频文件。
+- ffprobe 自动检测格式、时长、码率、采样率、通道和画面尺寸。
+- 扫描/选择蓝牙设备。
+- 选择 watermark 压降法或 PI 控制法。
+- 启动后实时显示 ffmpeg 生产数据、发送数据、ACK/status、buffer fill/free 和日志。
+
 桌面端依赖 Electron，默认不参与根构建，避免基础协议/CLI 开发时被大包下载拖慢。
 
 ## Development Rules
@@ -292,3 +300,63 @@ experiments/audio-flow/03-watermark-vs-pi.svg
 ```text
 /run/media/howtion/thinkplus/1.8/LIVE2D_ESP32_STREAM_PROTOCOL.zh.md
 ```
+
+## WiFi/MQTT Streaming 1.2-dev
+
+tools 已新增 MQTT 音频发送脚本，协议包格式和 ACK/status 与 BLE 完全一致。MQTT 只是替换 transport：
+
+```text
+本机 ffmpeg
+  -> 实时解码 MP3 为 16 kHz mono s16le PCM
+  -> PC sender 按 watermark 或 PI 控制发送
+  -> MQTT publish live2d/{device}/audio/in
+  -> ESP32 MQTT gateway 写入 remote audio ring
+  -> ESP32 publish live2d/{device}/audio/status
+```
+
+发送脚本：
+
+```bash
+npm run audio:mqtt -- \
+  --broker mqtt://192.168.1.10:1883 \
+  --device-id live2d-atri \
+  --input /run/media/howtion/thinkplus/1.8/03.mp3 \
+  --mode watermark \
+  --metrics experiments/audio-flow/03-mqtt-watermark.csv \
+  --summary experiments/audio-flow/03-mqtt-watermark.json \
+  --progress-json
+
+npm run audio:mqtt -- \
+  --broker mqtt://192.168.1.10:1883 \
+  --device-id live2d-atri \
+  --input /run/media/howtion/thinkplus/1.8/03.mp3 \
+  --mode pi \
+  --metrics experiments/audio-flow/03-mqtt-pi.csv \
+  --summary experiments/audio-flow/03-mqtt-pi.json \
+  --progress-json
+```
+
+Topic：
+
+```text
+live2d/{device}/cmd
+live2d/{device}/audio/in
+live2d/{device}/audio/status
+live2d/{device}/state
+```
+
+施工文档见：
+
+```text
+docs/WIFI_MQTT_GATEWAY_CONSTRUCTION.zh.md
+docs/WIFI_MQTT_TO_ESP32.zh.md
+```
+
+默认发送节流：
+
+```text
+--max-send-bps 32000
+--startup-burst-bytes 49152
+```
+
+`--max-send-bps` 按 16 kHz mono s16le 的播放消费速度限速，ACK/status 仍然负责 ring buffer 水位和滑动窗口。

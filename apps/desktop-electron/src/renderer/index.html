@@ -68,12 +68,20 @@
 
         <wired-card class="panel device-panel">
           <span class="tape tape-b"></span>
-          <h2>蓝牙设备</h2>
+          <h2>传输通道</h2>
+          <wired-radio-group id="transportGroup" selected="ble">
+            <wired-radio name="ble">BLE</wired-radio>
+            <wired-radio name="mqtt">WiFi / MQTT</wired-radio>
+          </wired-radio-group>
           <div class="row">
             <wired-input id="adapterInput" value="hci0" placeholder="hci0"></wired-input>
             <wired-button id="scanButton">扫描</wired-button>
           </div>
           <div id="deviceList" class="device-list"></div>
+          <div class="mqtt-fields">
+            <wired-input id="brokerInput" value="mqtt://192.168.1.10:1883" placeholder="mqtt://host:1883"></wired-input>
+            <wired-input id="mqttDeviceInput" value="live2d-atri" placeholder="live2d-atri"></wired-input>
+          </div>
         </wired-card>
 
         <wired-card class="panel mode-panel">

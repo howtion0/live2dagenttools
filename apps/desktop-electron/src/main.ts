@@ -27,10 +27,13 @@ interface AudioProbe {
 }
 
 interface StartAudioRequest {
-  device: string;
+  transport?: "ble" | "mqtt";
+  device?: string;
   inputPath: string;
   mode: "watermark" | "pi";
   adapter?: string;
+  broker?: string;
+  deviceId?: string;
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -38,6 +41,7 @@ const appRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(appRoot, "../..");
 const rendererRoot = path.join(appRoot, "src/renderer");
 const bleAudioScript = path.join(repoRoot, "scripts/ble_audio_stream.py");
+const mqttAudioScript = path.join(repoRoot, "scripts/mqtt_audio_stream.py");
 
 let mainWindow: BrowserWindow | undefined;
 let activeSender: ChildProcess | undefined;
@@ -115,8 +119,14 @@ ipcMain.handle("audio:start", async (_event, request: StartAudioRequest) => {
   if (activeSender) {
     throw new Error("已有发送任务在运行");
   }
-  if (!request.device || !request.inputPath) {
-    throw new Error("device 和 inputPath 必填");
+  if (!request.inputPath) {
+    throw new Error("inputPath 必填");
+  }
+  if ((request.transport ?? "ble") === "ble" && !request.device) {
+    throw new Error("BLE device 必填");
+  }
+  if (request.transport === "mqtt" && !request.broker) {
+    throw new Error("MQTT broker 必填");
   }
   await stat(request.inputPath);
   startSender(request);
@@ -169,22 +179,36 @@ async function probeAudio(inputPath: string): Promise<AudioProbe> {
 }
 
 function startSender(request: StartAudioRequest): void {
-  const args = [
-    bleAudioScript,
-    "--device",
-    request.device,
-    "--input",
-    request.inputPath,
-    "--mode",
-    request.mode,
-    "--adapter",
-    request.adapter || "hci0",
-    "--progress-json",
-  ];
+  const transport = request.transport ?? "ble";
+  const args: string[] = transport === "mqtt"
+    ? [
+        mqttAudioScript,
+        "--broker",
+        request.broker || "",
+        "--device-id",
+        request.deviceId || "live2d-atri",
+        "--input",
+        request.inputPath,
+        "--mode",
+        request.mode,
+        "--progress-json",
+      ]
+    : [
+        bleAudioScript,
+        "--device",
+        request.device || "",
+        "--input",
+        request.inputPath,
+        "--mode",
+        request.mode,
+        "--adapter",
+        request.adapter || "hci0",
+        "--progress-json",
+      ];
 
-  const sender = spawn("python3", args, { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] });
+  const sender: ChildProcess = spawn("python3", args, { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] });
   activeSender = sender;
-  emitAudioEvent({ event: "spawn", mode: request.mode, message: `python3 ${args.join(" ")}` });
+  emitAudioEvent({ event: "spawn", transport, mode: request.mode, message: `python3 ${args.join(" ")}` });
 
   if (!sender.stdout || !sender.stderr) {
     throw new Error("sender stdout/stderr unavailable");
@@ -209,10 +233,10 @@ function startSender(request: StartAudioRequest): void {
     }
   });
 
-  sender.on("error", (error) => {
+  sender.on("error", (error: Error) => {
     emitAudioEvent({ event: "error", message: error.message });
   });
-  sender.on("close", (code, signal) => {
+  sender.on("close", (code: number | null, signal: NodeJS.Signals | null) => {
     emitAudioEvent({ event: "close", code, signal });
     if (activeSender === sender) {
       activeSender = undefined;

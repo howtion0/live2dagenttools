@@ -8,6 +8,7 @@
     "typecheck": "node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
     "cli": "npm run build && node --enable-source-maps dist/apps/cli/src/index.js",
     "audio:send": "python3 scripts/ble_audio_stream.py",
+    "audio:mqtt": "python3 scripts/mqtt_audio_stream.py",
     "audio:plot": "python3 scripts/plot_audio_metrics.py",
     "android:install": "cd apps/android && npm install --no-bin-links",
     "android:init": "cd apps/android && npm install --no-bin-links && node node_modules/@capacitor/cli/bin/capacitor add android",
