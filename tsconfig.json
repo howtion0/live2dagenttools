@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": [
+    "apps/cli/**/*.ts",
+    "apps/web/**/*.ts",
+    "packages/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "apps/android/android"
+  ]
+}

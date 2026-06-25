@@ -1,0 +1,22 @@
+{
+  "name": "live2dagenttools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node node_modules/typescript/bin/tsc -p tsconfig.json",
+    "typecheck": "node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "cli": "npm run build && node --enable-source-maps dist/apps/cli/src/index.js",
+    "android:install": "cd apps/android && npm install --no-bin-links",
+    "android:init": "cd apps/android && npm install --no-bin-links && node node_modules/@capacitor/cli/bin/capacitor add android",
+    "android:open": "cd apps/android && node node_modules/@capacitor/cli/bin/capacitor open android",
+    "android:sync": "cd apps/android && node node_modules/@capacitor/cli/bin/capacitor sync android",
+    "desktop:install": "cd apps/desktop-electron && npm install --no-bin-links",
+    "desktop:dev": "cd apps/desktop-electron && npm install --no-bin-links && npm run dev",
+    "web:dev": "echo \"TODO: add Vite UI shell\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.11",
+    "typescript": "^5.5.4"
+  }
+}

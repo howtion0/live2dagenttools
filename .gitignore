@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+
+# Capacitor / Android generated output
+apps/android/android/
+
+# Electron generated output
+apps/desktop-electron/out/
+apps/desktop-electron/release/

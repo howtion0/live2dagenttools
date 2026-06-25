@@ -1,0 +1,11 @@
+{
+  "name": "@live2dagenttools/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "typecheck": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "dev": "echo \"TODO: add Vite UI shell\""
+  }
+}

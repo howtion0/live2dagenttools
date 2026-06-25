@@ -1,0 +1,14 @@
+{
+  "name": "@live2dagenttools/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "live2dagent": "dist/index.js"
+  },
+  "scripts": {
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "typecheck": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "dev": "npm run build && node --enable-source-maps dist/index.js"
+  }
+}
