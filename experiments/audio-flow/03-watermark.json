@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "mode": "watermark",
+  "bytes": 8387334,
+  "packets": 46597,
+  "durationSeconds": 260.463728439001,
+  "averageBytesPerSecond": 32201.543187093946,
+  "statusUpdates": 2020,
+  "finalFree": 8304,
+  "finalFill": 122768,
+  "finalReceived": 8384400,
+  "finalRead": 8261632,
+  "highWater": 125816,
+  "metrics": "experiments/audio-flow/03-watermark.csv"
+}

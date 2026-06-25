@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live2D Agent Tools</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="https://unpkg.com/wired-elements?module"></script>
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="toolbar">
+        <div>
+          <h1>Live2D Agent Tools</h1>
+          <p>BLE command and audio sender for ESP32 Live2D agent.</p>
+        </div>
+        <wired-input id="deviceInput" placeholder="BLE MAC, e.g. 3C:DC:75:6F:C2:72"></wired-input>
+      </section>
+
+      <section class="grid">
+        <wired-card elevation="3" class="panel">
+          <h2>Actions</h2>
+          <div class="actions">
+            <wired-button data-command="ping">Ping</wired-button>
+            <wired-button data-command="wave">Wave</wired-button>
+            <wired-button data-command="motion:think">Think</wired-button>
+            <wired-button data-command="motion:talk">Talk</wired-button>
+            <wired-button data-command="motion:nod">Nod</wired-button>
+            <wired-button data-command="motion:random">Random</wired-button>
+          </div>
+          <label class="field-label" for="customCommand">Custom command</label>
+          <div class="inline">
+            <wired-input id="customCommand" placeholder="motion:shy"></wired-input>
+            <wired-button id="sendCustom">Send</wired-button>
+          </div>
+        </wired-card>
+
+        <wired-card elevation="3" class="panel">
+          <h2>Audio</h2>
+          <div id="dropZone" class="drop-zone">
+            <strong>Drop MP3/WAV here</strong>
+            <span>ffmpeg streams it as 16 kHz mono s16le PCM when sending.</span>
+            <input id="fileInput" type="file" accept="audio/*" />
+          </div>
+          <div class="audio-meta">
+            <span id="audioName">No audio loaded</span>
+            <span id="audioInfo"></span>
+          </div>
+          <wired-button id="sendAudio" disabled>Send Audio</wired-button>
+        </wired-card>
+      </section>
+
+      <wired-card elevation="2" class="log-panel">
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </wired-card>
+
+      <section class="protocol">
+        <div class="protocol-header">
+          <h2>BLE Audio Credit Window Protocol</h2>
+          <p>Live2D Agent 当前使用 GATT 文本命令、PCM 音频写入、状态通知三条 characteristic。音频链路是带背压的生产者-消费者模型。</p>
+        </div>
+
+        <div class="protocol-grid">
+          <article class="protocol-card">
+            <h3>GATT Map</h3>
+            <dl class="kv">
+              <dt>Service</dt>
+              <dd><code>01104c21-e36a-2f97-454c-5a8a2f8f369e</code></dd>
+              <dt>Command Write</dt>
+              <dd><code>02104c21-e36a-2f97-454c-5a8a2f8f369e</code></dd>
+              <dt>Audio Write</dt>
+              <dd><code>03104c21-e36a-2f97-454c-5a8a2f8f369e</code></dd>
+              <dt>Status Notify</dt>
+              <dd><code>04104c21-e36a-2f97-454c-5a8a2f8f369e</code></dd>
+            </dl>
+          </article>
+
+          <article class="protocol-card">
+            <h3>Text Commands</h3>
+            <pre class="mini-code">ping
+wave
+motion:think
+motion:talk
+motion:nod
+motion:random
+speak:ATR_b102_015</pre>
+          </article>
+
+          <article class="protocol-card wide">
+            <h3>Audio Packets</h3>
+            <div class="packet-table">
+              <div><strong>START</strong><span><code>0x01</code> + total_len_u32_le + sample_rate_u16_le + channels + format</span></div>
+              <div><strong>DATA</strong><span><code>0x02</code> + seq_u16_le + PCM payload, current payload <code>180 bytes</code></span></div>
+              <div><strong>END</strong><span><code>0x03</code></span></div>
+              <div><strong>CANCEL</strong><span><code>0x04</code></span></div>
+              <div><strong>STATUS</strong><span><code>0x10</code> + free + fill + received + read + high_water + active + finished</span></div>
+            </div>
+          </article>
+
+          <article class="protocol-card wide">
+            <h3>Streaming Flow</h3>
+            <ol class="flow">
+              <li>Web server starts <code>ffmpeg -i input -ac 1 -ar 16000 -f s16le pipe:1</code>; ffmpeg continuously produces PCM.</li>
+              <li>The BLE sender is ffmpeg stdout's consumer: it reads PCM only when ESP32 credit says there is room.</li>
+              <li>Sender subscribes to Status Notify and treats it as batch ACK/credit: <code>free</code>, <code>fill</code>, <code>received</code>, <code>read</code>.</li>
+              <li>If credit is low, BLE sender stops consuming ffmpeg stdout; stdout blocks naturally, so ffmpeg is backpressured.</li>
+              <li>ESP32 BLE callback writes DATA into a PSRAM ring buffer and returns quickly.</li>
+              <li>ESP32 audio task starts after the low watermark, reads the ring buffer, expands mono to stereo, then writes I2S.</li>
+              <li>I2S DMA moves stereo PCM to ES8311 while the BLE producer continues only when credit allows.</li>
+            </ol>
+          </article>
+
+          <article class="protocol-card wide">
+            <h3>ESP32 Internal Pipeline</h3>
+            <pre class="mini-code">BLE GATT write callback
+  -> validate seq
+  -> PSRAM ring buffer producer
+  -> Status Notify credit updates
+
+audio task on CPU0
+  -> wait low watermark
+  -> ring buffer consumer
+  -> mono s16le to stereo s16le
+  -> i2s_channel_write()
+  -> ESP-IDF I2S DMA
+  -> ES8311 speaker output</pre>
+          </article>
+
+          <article class="protocol-card wide">
+            <h3>Backpressure Contract</h3>
+            <pre class="mini-code">Sender:
+  wait until free >= payload + safety_margin
+  write DATA(seq)
+  locally subtract credit
+
+ESP32:
+  notify on subscribe/start/finish/cancel
+  notify after every 4 KB consumed
+  report free/fill/received/read/high_water</pre>
+          </article>
+
+          <article class="protocol-card wide">
+            <h3>Producer / Consumer Ownership</h3>
+            <pre class="mini-code">PC side:
+  ffmpeg = PCM producer
+  BLE sender = ffmpeg consumer + BLE producer
+  ESP32 status notify = batch ACK / credit source
+
+ESP32 side:
+  BLE callback = ring-buffer producer
+  audio task = ring-buffer consumer + I2S producer
+  I2S DMA = hardware consumer to ES8311</pre>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

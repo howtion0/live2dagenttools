@@ -35,4 +35,8 @@ export class Live2DAgentClient {
   speak(clipId: string): Promise<void> {
     return this.send({ type: "speak", clipId });
   }
+
+  motion(motionId: string): Promise<void> {
+    return this.send({ type: "motion", motionId });
+  }
 }

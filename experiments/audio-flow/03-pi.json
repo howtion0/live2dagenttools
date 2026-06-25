@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "mode": "pi",
+  "bytes": 8387334,
+  "packets": 46597,
+  "durationSeconds": 260.68640076500014,
+  "averageBytesPerSecond": 32174.037369754835,
+  "statusUpdates": 2026,
+  "finalFree": 33240,
+  "finalFill": 97832,
+  "finalReceived": 8384040,
+  "finalRead": 8286208,
+  "highWater": 102352,
+  "metrics": "experiments/audio-flow/03-pi.csv"
+}

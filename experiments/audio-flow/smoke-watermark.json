@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "mode": "watermark",
+  "bytes": 96000,
+  "packets": 534,
+  "durationSeconds": 0.6324875049976981,
+  "averageBytesPerSecond": 151781.6545646216,
+  "statusUpdates": 3,
+  "finalFree": 131072,
+  "finalFill": 0,
+  "finalReceived": 0,
+  "finalRead": 0,
+  "highWater": 0,
+  "metrics": "experiments/audio-flow/smoke-watermark.csv"
+}

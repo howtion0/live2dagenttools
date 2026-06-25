@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "mode": "pi",
+  "bytes": 96000,
+  "packets": 534,
+  "durationSeconds": 1.8793933339984505,
+  "averageBytesPerSecond": 51080.31313262024,
+  "statusUpdates": 3,
+  "finalFree": 131072,
+  "finalFill": 0,
+  "finalReceived": 0,
+  "finalRead": 0,
+  "highWater": 0,
+  "metrics": "experiments/audio-flow/smoke-pi.csv"
+}

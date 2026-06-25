@@ -7,13 +7,15 @@
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.json",
     "typecheck": "node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
     "cli": "npm run build && node --enable-source-maps dist/apps/cli/src/index.js",
+    "audio:send": "python3 scripts/ble_audio_stream.py",
+    "audio:plot": "python3 scripts/plot_audio_metrics.py",
     "android:install": "cd apps/android && npm install --no-bin-links",
     "android:init": "cd apps/android && npm install --no-bin-links && node node_modules/@capacitor/cli/bin/capacitor add android",
     "android:open": "cd apps/android && node node_modules/@capacitor/cli/bin/capacitor open android",
     "android:sync": "cd apps/android && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "desktop:install": "cd apps/desktop-electron && npm install --no-bin-links",
     "desktop:dev": "cd apps/desktop-electron && npm install --no-bin-links && npm run dev",
-    "web:dev": "echo \"TODO: add Vite UI shell\""
+    "web:dev": "npm run build && node --enable-source-maps dist/apps/web/src/server.js"
   },
   "devDependencies": {
     "@types/node": "^20.14.11",

@@ -280,6 +280,143 @@ speak:<clip_id>
 motion:<motion_id>
 ```
 
+2026-06-25 更新：CLI 已增加快捷命令，仍兼容原始 `send --message`：
+
+```bash
+npm run cli -- ping --device 3C:DC:75:6F:C2:72
+npm run cli -- wave --device 3C:DC:75:6F:C2:72
+npm run cli -- motion --device 3C:DC:75:6F:C2:72 --motion think
+npm run cli -- speak --device 3C:DC:75:6F:C2:72 --clip ATR_b102_015
+```
+
+ESP32 端当前已消费：
+
+```text
+ping
+wave
+motion:talk|nod|wave|shy|raise_left_hand|raise_right_hand|raise_both_hands|think|random
+speak:ATR_b102_015 或 speak:015
+```
+
+`face/look/audio:start/audio:stop` 只解析并记录未实现日志，尚未接实际行为。
+
+## 2026-06-25 Web UI + ffmpeg + BLE 音频
+
+按 tools 文档职责划分，`apps/web` 现在是本地开发工具 UI：
+
+```bash
+npm run web:dev
+```
+
+启动后打开：
+
+```text
+http://127.0.0.1:5178
+```
+
+实现内容：
+
+```text
+UI:
+  Wired Elements 手绘风格控件，通过 unpkg ES module 加载 wired-elements
+  输入 BLE MAC
+  发送 ping / wave / motion:think / motion:talk / motion:nod / motion:random
+  自定义文本命令
+  拖拽 MP3/WAV/audio 文件
+  转码完成后点击 Send Audio 发送
+
+本地 server:
+  apps/web/src/server.ts
+  POST /api/convert 使用系统 ffmpeg 转码
+  POST /api/send-command 通过 BlueZ command characteristic 写文本命令
+  POST /api/send-audio 通过 BlueZ audio characteristic 写二进制音频包
+```
+
+音频转换格式：
+
+```text
+sample_rate: 16000
+channels: 1
+format: s16le raw PCM
+ffmpeg args:
+  -ac 1 -ar 16000 -f s16le
+```
+
+BLE UUID：
+
+```text
+service:
+  01104c21-e36a-2f97-454c-5a8a2f8f369e
+
+command characteristic:
+  02104c21-e36a-2f97-454c-5a8a2f8f369e
+
+audio characteristic:
+  03104c21-e36a-2f97-454c-5a8a2f8f369e
+```
+
+第一版 BLE 音频协议是“整段缓存再播放”，不是实时流：
+
+```text
+START packet:
+  byte 0: 0x01
+  byte 1..4: total_len_u32_le
+  byte 5..6: sample_rate_u16_le, must be 16000
+  byte 7: channels, must be 1
+  byte 8: format, 1 = s16le
+
+DATA packet:
+  byte 0: 0x02
+  byte 1..2: seq_u16_le
+  byte 3..: payload
+
+END packet:
+  byte 0: 0x03
+
+CANCEL packet:
+  byte 0: 0x04
+```
+
+当前 tools 端 DATA payload 用 `180 bytes`，保守避开不同 MTU/BlueZ 写入限制。ESP32 端会把完整 PCM 放进 PSRAM，收到 END 后交给 audio task，播放时 mono 转 stereo。
+
+本机联调证据：
+
+```text
+Web UI:
+  http://127.0.0.1:5178
+
+ffmpeg convert:
+  ATR_b102_016.wav -> 105600 bytes
+  duration: 3300 ms
+  format: 16000 Hz mono s16le
+
+send audio API:
+  POST /api/send-audio -> {"ok":true,"bytes":105600}
+
+send command API after audio:
+  POST /api/send-command motion:wave -> {"ok":true}
+```
+
+BlueZ transport 修复：
+
+```text
+packages/transport-bluez:
+  connect() 现在会调用 BlueZ D-Bus Device1.Connect()
+  并等待目标 GATT characteristic 出现
+  scan() 现在会调用 BlueZ Adapter1.StartDiscovery()，默认扫描 5 秒后输出设备列表
+  disconnect() 现在会调用 BlueZ Device1.Disconnect()
+
+原因:
+  之前 connect() 只记录 MAC，真实联调时会报
+  "GATT characteristic not found; connect and resolve services first"
+```
+
+CLI 可直接扫描：
+
+```bash
+npm run cli -- scan
+```
+
 建议逐步扩展，不要一开始上复杂二进制协议。
 
 推荐下一步格式：

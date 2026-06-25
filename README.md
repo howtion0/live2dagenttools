@@ -1,5 +1,7 @@
 # live2dagenttools
 
+Version: `1.0.0-pid`
+
 Live2D Agent 的跨平台交互工具集。目标是把“控制 ESP32 Live2D 设备”的业务逻辑写成可复用 TypeScript 内核，再按平台替换 transport：
 
 - Android APK: Capacitor + Android SDK + BLE 插件/原生插件
@@ -172,3 +174,121 @@ motion:<motion_id>
 ```
 
 后面如果命令变复杂，可以把 `protocol` 从纯文本升级为 JSON Lines 或二进制帧，但 transport interface 不需要变化。
+
+## BLE MP3 Streaming 1.0 / 1.0-pid
+
+当前仓库支持把本机 MP3 流式送到 ESP32：
+
+```text
+本机 ffmpeg
+  -> 实时解码 MP3 为 16 kHz mono s16le PCM
+  -> PC 端 sender 消费 ffmpeg stdout
+  -> sender 按 ACK 水位版或 PI 版控制 BLE 发送
+  -> ESP32 BLE 接收 DATA
+  -> ESP32 CPU0 解析协议并写入 remote audio ring
+  -> ESP32 回传 ACK/status
+  -> ESP32 CPU0 音频任务从 ring 读 PCM
+  -> mono s16le 转 stereo s16le
+  -> I2S DMA / ES8311 / speaker
+```
+
+发送脚本：
+
+```bash
+npm run audio:send -- \
+  --device 3C:DC:75:6F:C2:72 \
+  --input /run/media/howtion/thinkplus/1.8/03.mp3 \
+  --mode watermark \
+  --metrics experiments/audio-flow/03-watermark.csv \
+  --summary experiments/audio-flow/03-watermark.json
+
+npm run audio:send -- \
+  --device 3C:DC:75:6F:C2:72 \
+  --input /run/media/howtion/thinkplus/1.8/03.mp3 \
+  --mode pi \
+  --metrics experiments/audio-flow/03-pi.csv \
+  --summary experiments/audio-flow/03-pi.json
+```
+
+绘图：
+
+```bash
+npm run audio:plot -- \
+  --watermark experiments/audio-flow/03-watermark.csv \
+  --pi experiments/audio-flow/03-pi.csv \
+  --out experiments/audio-flow/03-watermark-vs-pi.svg \
+  --summary experiments/audio-flow/03-comparison.json
+```
+
+水位版是 `1.0` 基线：
+
+```text
+outstanding = max(0, sent - received)
+effective_free = max(0, free - outstanding)
+
+if effective_free >= payload_len + 4096:
+  send DATA
+else:
+  wait
+```
+
+PI 版是 `1.0-pid`，PID/PI 只在电脑端运行，ESP32 协议不变。它保留水位硬保护，同时用 `target_fill - fill` 控制每个 tick 的发送预算：
+
+```text
+target_fill = 96 KiB
+error = target_fill - fill
+integral += error * dt
+budget = base_budget + Kp * error + Ki * integral
+```
+
+当前默认参数：
+
+```text
+tick = 20 ms
+Kp = 0.006
+Ki = 0.00004
+min_budget = 0 bytes/tick
+max_budget = 2200 bytes/tick
+payload = 180 bytes
+```
+
+PI 输出控制的是 `send_budget_per_tick`，不是 BLE 单包大小。单包 payload 保持 180 bytes，避免和 ATT MTU、BlueZ、NimBLE 行为互相干扰。
+
+### 03.mp3 对比结果
+
+测试文件：
+
+```text
+/run/media/howtion/thinkplus/1.8/03.mp3
+```
+
+结果文件：
+
+```text
+experiments/audio-flow/03-watermark.csv
+experiments/audio-flow/03-watermark.json
+experiments/audio-flow/03-pi.csv
+experiments/audio-flow/03-pi.json
+experiments/audio-flow/03-comparison.json
+experiments/audio-flow/03-watermark-vs-pi.svg
+```
+
+实测结果：
+
+| 模式 | PCM bytes | packets | duration | avg throughput | avg fill | max fill |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| watermark | 8,387,334 | 46,597 | 260.46 s | 32,201 B/s | 121,145 B | 122,880 B |
+| pi | 8,387,334 | 46,597 | 260.69 s | 32,174 B/s | 98,820 B | 101,212 B |
+
+结论：
+
+- 两种模式吞吐几乎一样，都贴近 16 kHz mono s16le 的播放速率。
+- 水位版平均 fill 更高，基本维持在 120 KiB 以上，延迟更高。
+- PI 版把平均 fill 压到约 96-100 KiB，峰值也低很多，播放安全余量仍足够。
+- 现阶段 PI 的价值主要是降低平均缓存和延迟，不是提升吞吐。
+
+协议细节见工作区根目录：
+
+```text
+/run/media/howtion/thinkplus/1.8/LIVE2D_ESP32_STREAM_PROTOCOL.zh.md
+```

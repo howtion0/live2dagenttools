@@ -3,6 +3,8 @@ dist/
 build/
 .DS_Store
 *.log
+__pycache__/
+*.pyc
 
 # Capacitor / Android generated output
 apps/android/android/

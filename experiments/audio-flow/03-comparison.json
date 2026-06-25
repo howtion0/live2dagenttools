@@ -1,0 +1,20 @@
+{
+  "watermark": {
+    "durationSeconds": 260.462005,
+    "sentBytes": 8387334.0,
+    "averageBytesPerSecond": 32201.756259996542,
+    "avgFill": 121145.18031003536,
+    "minFill": 64528.0,
+    "maxFill": 122880.0,
+    "maxEffectiveFree": 131072.0
+  },
+  "pi": {
+    "durationSeconds": 260.684826,
+    "sentBytes": 8387334.0,
+    "averageBytesPerSecond": 32174.231729160947,
+    "avgFill": 98820.32364919902,
+    "minFill": 64844.0,
+    "maxFill": 101212.0,
+    "maxEffectiveFree": 131072.0
+  }
+}
