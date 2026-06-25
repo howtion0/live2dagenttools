@@ -1,6 +1,6 @@
 # Live2D ESP32 WiFi/MQTT Gateway 施工文档
 
-版本：`1.2-dev`
+版本：`1.2`
 起点：tools `v1.1` 已推送到 GitHub，提交 `71bc2d7`
 
 ## 目标

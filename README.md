@@ -301,7 +301,7 @@ experiments/audio-flow/03-watermark-vs-pi.svg
 /run/media/howtion/thinkplus/1.8/LIVE2D_ESP32_STREAM_PROTOCOL.zh.md
 ```
 
-## WiFi/MQTT Streaming 1.2-dev
+## WiFi/MQTT Streaming 1.2
 
 tools 已新增 MQTT 音频发送脚本，协议包格式和 ACK/status 与 BLE 完全一致。MQTT 只是替换 transport：
 
