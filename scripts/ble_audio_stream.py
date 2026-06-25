@@ -176,6 +176,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["watermark", "pi"], default="watermark")
     parser.add_argument("--metrics", help="Optional CSV metrics output path")
     parser.add_argument("--summary", help="Optional JSON summary output path")
+    parser.add_argument("--progress-json", action="store_true", help="Print newline-delimited progress JSON to stdout")
     parser.add_argument("--adapter", default="hci0")
     parser.add_argument("--chunk-size", type=int, default=180)
     parser.add_argument("--safety-margin", type=int, default=4096)
@@ -202,6 +203,7 @@ def main() -> None:
     packets = 0
     seq = 0
     wait_count = 0
+    produced = 0
 
     pi = PiController(
         target_fill=args.target_fill,
@@ -255,6 +257,31 @@ def main() -> None:
             controller_budget=controller_budget,
             waits=wait_count,
         )
+        if args.progress_json:
+            print(
+                json.dumps(
+                    {
+                        "event": event,
+                        "mode": args.mode,
+                        "timeSeconds": time.monotonic() - started_at,
+                        "produced": produced,
+                        "sent": sent,
+                        "packets": packets,
+                        "seq": seq,
+                        "free": current.free,
+                        "fill": current.fill,
+                        "received": current.received,
+                        "read": current.read,
+                        "high": current.high,
+                        "outstanding": outstanding,
+                        "effectiveFree": effective_free,
+                        "controllerBudget": controller_budget,
+                        "waits": wait_count,
+                    },
+                    ensure_ascii=False,
+                ),
+                flush=True,
+            )
 
     def parse_status(value: object) -> None:
         data = bytes([int(v) for v in value])
@@ -361,6 +388,8 @@ def main() -> None:
             decoded = ffmpeg.stdout.read(4096)
             if not decoded:
                 break
+            produced += len(decoded)
+            write_metric("produce", pi.last_budget if args.mode == "pi" else 0.0)
             pending += decoded
             even_len = len(pending) & ~1
             offset = 0

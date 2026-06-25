@@ -1,0 +1,277 @@
+@import url("https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&display=swap");
+
+:root {
+  color-scheme: light;
+  --ink: #111;
+  --muted: #666;
+  --paper: #fff;
+  --line: #111;
+  --accent: #018786;
+  --danger: #b00020;
+  --wired-primary-color: #111;
+  --wired-secondary-color: #018786;
+  --wired-item-selected-bg: #e0f7f6;
+  --hand-font: "Gloria Hallelujah", "Comic Sans MS", "Segoe Print", "Bradley Hand", "Marker Felt", cursive;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--hand-font);
+  font-size: 16px;
+}
+
+h1,
+h2,
+p,
+dl,
+dd {
+  margin: 0;
+}
+
+button,
+input,
+wired-button,
+wired-input,
+wired-radio,
+wired-card,
+wired-progress {
+  font-family: var(--hand-font);
+}
+
+.shell {
+  width: min(1000px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 34px 0 30px;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.topbar h1 {
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.topbar p {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.scribble-note,
+.tape {
+  display: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.panel {
+  padding: 20px 22px 22px;
+  min-height: 218px;
+  background: #fff;
+}
+
+.panel h2,
+.log-head h2 {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.25;
+  margin-bottom: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.muted {
+  min-width: 0;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 22px;
+  margin-top: 16px;
+}
+
+.meta div,
+.stats div {
+  min-width: 0;
+}
+
+.meta dt,
+.stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.meta dd,
+.stats strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.device-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  max-height: 158px;
+  overflow: auto;
+  padding: 2px 6px 2px 2px;
+}
+
+.device {
+  width: 100%;
+  color: var(--ink);
+  text-align: left;
+}
+
+.device.selected {
+  color: var(--accent);
+  --wired-primary-color: var(--accent);
+}
+
+.device strong,
+.device span,
+.device small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device strong {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.device span,
+.device small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mode-panel wired-radio-group {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.mode-panel wired-button,
+.source-panel wired-button,
+.device-panel wired-button {
+  min-width: 130px;
+}
+
+.state {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px 16px;
+}
+
+.stats div {
+  min-height: 68px;
+  padding: 8px 0;
+  border-bottom: 2px solid #111;
+}
+
+.stats strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+#fillProgress {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.log-panel {
+  margin-top: 24px;
+}
+
+.log-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+#log {
+  height: 220px;
+  margin: 0;
+  overflow: auto;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 14px/1.6 var(--hand-font);
+  white-space: pre-wrap;
+}
+
+wired-input {
+  width: 108px;
+}
+
+wired-button[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (max-width: 1040px) {
+  body {
+    min-width: 0;
+  }
+
+  .shell {
+    width: calc(100vw - 28px);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live2D ESP32 Audio Stream</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "../../node_modules/lit/index.js",
+          "lit/": "../../node_modules/lit/",
+          "@lit/reactive-element": "../../node_modules/@lit/reactive-element/reactive-element.js",
+          "@lit/reactive-element/": "../../node_modules/@lit/reactive-element/",
+          "lit-html": "../../node_modules/lit-html/lit-html.js",
+          "lit-html/": "../../node_modules/lit-html/",
+          "lit-element": "../../node_modules/lit-element/index.js",
+          "lit-element/": "../../node_modules/lit-element/",
+          "path-data-parser": "../../node_modules/path-data-parser/lib/index.js",
+          "points-on-curve": "../../node_modules/points-on-curve/lib/index.js",
+          "points-on-curve/": "../../node_modules/points-on-curve/",
+          "points-on-path": "../../node_modules/points-on-path/lib/index.js",
+          "points-on-path/": "../../node_modules/points-on-path/",
+          "hachure-fill": "../../node_modules/hachure-fill/bin/hachure.js",
+          "roughjs/bin/renderer": "../../node_modules/roughjs/bin/renderer.js",
+          "roughjs/bin/fillers/zigzag-filler": "./zigzag-filler-shim.js"
+        }
+      }
+    </script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-button.js"></script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-card.js"></script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-input.js"></script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-progress.js"></script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-radio.js"></script>
+    <script type="module" src="../../node_modules/wired-elements/lib/wired-radio-group.js"></script>
+    <script type="module" src="./renderer.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>Live2D ESP32 音频流发送台</h1>
+          <p>ffmpeg 实时生产 PCM，BLE 消费发送，ESP32 ACK 回传闭环控制。</p>
+        </div>
+        <span class="scribble-note">live stream<br />bench</span>
+        <wired-button id="stopButton" disabled>停止</wired-button>
+      </section>
+
+      <section class="grid">
+        <wired-card class="panel source-panel">
+          <span class="tape tape-a"></span>
+          <h2>音频源</h2>
+          <div class="row">
+            <wired-button id="pickButton">选择音频</wired-button>
+            <span id="fileName" class="muted">未选择</span>
+          </div>
+          <dl class="meta">
+            <div><dt>格式</dt><dd id="formatName">-</dd></div>
+            <div><dt>文件大小</dt><dd id="fileBytes">-</dd></div>
+            <div><dt>时长</dt><dd id="duration">-</dd></div>
+            <div><dt>音频</dt><dd id="audioCodec">-</dd></div>
+            <div><dt>采样</dt><dd id="sampleRate">-</dd></div>
+            <div><dt>通道</dt><dd id="channels">-</dd></div>
+            <div><dt>码率</dt><dd id="bitRate">-</dd></div>
+            <div><dt>画面尺寸</dt><dd id="mediaSize">-</dd></div>
+          </dl>
+        </wired-card>
+
+        <wired-card class="panel device-panel">
+          <span class="tape tape-b"></span>
+          <h2>蓝牙设备</h2>
+          <div class="row">
+            <wired-input id="adapterInput" value="hci0" placeholder="hci0"></wired-input>
+            <wired-button id="scanButton">扫描</wired-button>
+          </div>
+          <div id="deviceList" class="device-list"></div>
+        </wired-card>
+
+        <wired-card class="panel mode-panel">
+          <span class="tape tape-c"></span>
+          <h2>发送策略</h2>
+          <wired-radio-group id="modeGroup" selected="watermark">
+            <wired-radio name="watermark">压降法 / 水位 ACK</wired-radio>
+            <wired-radio name="pi">PID / PI 闭环</wired-radio>
+          </wired-radio-group>
+          <wired-button id="startButton" disabled>开始流式发送</wired-button>
+          <div id="stateText" class="state">等待音频和蓝牙设备</div>
+        </wired-card>
+
+        <wired-card class="panel stats-panel">
+          <span class="tape tape-d"></span>
+          <h2>实时流状态</h2>
+          <div class="stats">
+            <div><span>生产</span><strong id="produced">0 B</strong></div>
+            <div><span>发送</span><strong id="sent">0 B</strong></div>
+            <div><span>包数</span><strong id="packets">0</strong></div>
+            <div><span>ESP32 填充</span><strong id="fill">0 B</strong></div>
+            <div><span>空闲</span><strong id="free">0 B</strong></div>
+            <div><span>ACK 收到</span><strong id="received">0 B</strong></div>
+            <div><span>未确认</span><strong id="outstanding">0 B</strong></div>
+            <div><span>控制预算</span><strong id="budget">0 B/tick</strong></div>
+          </div>
+          <wired-progress id="fillProgress" value="0" min="0" max="131072"></wired-progress>
+        </wired-card>
+      </section>
+
+      <section class="log-panel">
+        <div class="log-head">
+          <h2>实时日志</h2>
+          <wired-button id="clearLogButton">清空</wired-button>
+        </div>
+        <pre id="log"></pre>
+      </section>
+    </main>
+  </body>
+</html>
