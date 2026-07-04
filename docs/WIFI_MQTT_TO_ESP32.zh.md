@@ -246,9 +246,7 @@ gateway_wifi
   status callback -> status queue -> MQTT publish audio/status
 ```
 
-当前 ESP32 还会在远程音频 stream active 期间暂停 IMU I2C 采样，流结束后恢复。原因是旧 I2C driver 在 WiFi 音频高负载下读取 QMI8658 容易触发 interrupt WDT；这不是开机禁用 IMU，空闲时 IMU 仍正常采样。
-
-FT3168 触摸如果启动 probe 失败，则不启动触摸轮询；probe 成功时仍启用触摸任务。这样避免不存在或异常的 I2C 触摸设备反复读寄存器导致 WDT。
+当前 V2 固件不再通过通信层暂停 IMU 或改变触摸轮询来规避问题。显示、触摸、IMU 适配限制在 ESP32 板级硬件层：V2 使用 CO5300 + CST816 + QMI8658。V1 的 SH8601 + FT3168 记录保留，但不是当前出货硬件目标。
 
 ## BLE / WiFi 互斥
 
@@ -269,7 +267,7 @@ owner = mqtt:
 
 会话结束并播放 drain 完成后释放 owner。
 
-当前构建配置里 WiFi gateway 启用时，主程序只启动 WiFi/MQTT gateway，不再同时初始化 BLE gateway，避免两条无线链路同时抢资源。
+当前 V2 构建里 BLE gateway 和 WiFi/MQTT gateway 都会初始化。ESP32 端 `remote_gateway` 维护音频 owner；发送端必须先等 START status ACK，再按 ACK/status 背压发 DATA，END 后等待 drain ACK。
 
 ## 通过标准
 

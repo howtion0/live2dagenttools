@@ -1,6 +1,6 @@
 {
   "name": "live2dagenttools",
-  "version": "1.2.0",
+  "version": "1.4.1-v2",
   "private": true,
   "type": "module",
   "scripts": {

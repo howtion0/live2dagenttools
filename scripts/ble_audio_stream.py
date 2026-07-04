@@ -187,6 +187,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-budget", type=float, default=0.0)
     parser.add_argument("--max-budget", type=float, default=2200.0)
     parser.add_argument("--integral-limit", type=float, default=4_000_000.0)
+    parser.add_argument("--start-ack-timeout", type=float, default=10.0, help="Seconds to wait for ESP32 status ACK after START")
+    parser.add_argument("--drain-timeout", type=float, default=20.0, help="Seconds to wait for final ESP32 drain ACK after END")
     return parser.parse_args()
 
 
@@ -320,6 +322,14 @@ def main() -> None:
         value = dbus.Array([dbus.Byte(b) for b in payload], signature="y")
         audio.WriteValue(value, dbus.Dictionary({"type": dbus.String("command")}, signature="sv"))
 
+    def wait_for_status_update(previous_updates: int, timeout_s: float, label: str) -> None:
+        deadline = time.monotonic() + max(0.0, timeout_s)
+        while time.monotonic() < deadline:
+            if snapshot().updates > previous_updates:
+                return
+            time.sleep(args.tick_ms / 1000.0)
+        raise RuntimeError(f"timed out waiting for ESP32 {label} status ACK")
+
     def send_payload(payload: bytes) -> None:
         nonlocal sent, packets, seq, wait_count
         while True:
@@ -357,8 +367,10 @@ def main() -> None:
         struct.pack_into("<H", start, 5, PCM_SAMPLE_RATE)
         start[7] = 1
         start[8] = AUDIO_FORMAT_S16LE_MONO
+        start_updates = snapshot().updates
         write_value(start)
         write_metric("start")
+        wait_for_status_update(start_updates, args.start_ack_timeout, "START")
 
         ffmpeg = subprocess.Popen(
             [
@@ -409,6 +421,25 @@ def main() -> None:
             send_payload(pending[:tail_len])
         write_value(bytes([0x03]))
         write_metric("end", pi.last_budget if args.mode == "pi" else 0.0)
+        drain_complete = False
+        drain_deadline = time.monotonic() + max(0.0, args.drain_timeout)
+        drain_samples = 0
+        while time.monotonic() < drain_deadline:
+            current = snapshot()
+            if current.received >= sent and current.read >= sent and current.fill == 0 and current.active == 0:
+                drain_complete = True
+                write_metric("drain", pi.last_budget if args.mode == "pi" else 0.0)
+                break
+            drain_samples += 1
+            if drain_samples % 10 == 0:
+                write_metric("drain_wait", pi.last_budget if args.mode == "pi" else 0.0)
+            time.sleep(args.tick_ms / 1000.0)
+        if not drain_complete:
+            current = snapshot()
+            raise RuntimeError(
+                "ESP32 did not drain audio stream "
+                f"sent={sent} received={current.received} read={current.read} fill={current.fill} active={current.active}"
+            )
     except Exception:
         if ffmpeg:
             try:
@@ -437,6 +468,7 @@ def main() -> None:
     final = snapshot()
     summary = {
         "ok": True,
+        "transport": "ble",
         "mode": args.mode,
         "bytes": sent,
         "packets": packets,
@@ -448,6 +480,7 @@ def main() -> None:
         "finalReceived": final.received,
         "finalRead": final.read,
         "highWater": final.high,
+        "drainComplete": True,
         "metrics": args.metrics,
     }
     if args.summary:

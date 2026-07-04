@@ -1,7 +1,8 @@
 # Live2D ESP32 WiFi/MQTT Gateway 施工文档
 
-版本：`1.2`
+版本：`1.4.1-v2`
 起点：tools `v1.1` 已推送到 GitHub，提交 `71bc2d7`
+当前硬件目标：Waveshare ESP32-S3-Touch-AMOLED-1.8 V2。V1 记录保留；当前 GitHub tag/release 使用 V2 后缀。
 
 ## 目标
 
@@ -11,6 +12,7 @@
 
 - BLE 和 WiFi/MQTT 两条链路解耦开发。
 - 运行时只选择一个链路工作：一旦 BLE 或 WiFi/MQTT 成功建立工作会话，另一条链路不再开始新的发送任务。
+- V2 固件中 BLE gateway 和 WiFi/MQTT gateway 都存在；ESP32 `remote_gateway` 维护 owner，PC sender 通过 ACK/status 背压控制发包。
 - 现有 BLE 的 `watermark` 压降法和 `pi` 控制法继续可用。
 - WiFi/MQTT 复用同一套音频流语义、ACK/status 字段和 PC 端控制器。
 - ffmpeg 仍然是生产者；发送端仍然是消费者；ESP32 ring/I2S DMA 播放不改语义。
@@ -240,8 +242,8 @@ metrics csv/json
 
 ### 2026-06-26 00:xx WiFi full tests
 
-- ESP32 侧在 WiFi 音频 active 期间暂停 IMU I2C 采样，流结束后恢复；空闲时 IMU 仍然工作。
-- FT3168 触摸 probe 失败时不启动轮询，避免不存在/异常 I2C 设备触发 interrupt WDT；probe 成功时仍启动触摸轮询。
+- 历史记录：曾在 ESP32 侧 WiFi 音频 active 期间暂停 IMU I2C 采样，也曾对 V1 FT3168 probe 失败做过不启动轮询的 workaround。
+- 当前 V2 规则：tools 不依赖这些 workaround；ESP32 V2 固件的显示/触摸/IMU 只在硬件层适配 CO5300/CST816/QMI8658，gateway/协议/tools 层不改触摸和 IMU 行为。
 - WiFi/MQTT 完整 `03.mp3` watermark 通过：
   - metrics：`experiments/audio-flow/03-mqtt-watermark-paced-full6.csv`
   - summary：`experiments/audio-flow/03-mqtt-watermark-paced-full6.json`
@@ -270,3 +272,11 @@ metrics csv/json
   - `finalRead=8387334`
   - `highWater=66780`
   - `drainComplete=true`
+
+### 2026-07-04 V2 BLE + WiFi/MQTT sender backpressure
+
+- tools 版本：`1.4.1-v2`。
+- 配套 ESP32 固件版本：`1.4.1-v2`。
+- BLE sender 补齐与 MQTT sender 相同的 START ACK 等待和 END drain 等待。
+- BLE/MQTT sender 都从 ESP32 status ACK 读取 `free/fill/received/read/high_water/active/finished`，再决定 DATA 发送节奏。
+- GUI 的 BLE / WiFi MQTT transport 选择保留；选择哪个 transport，就由对应 sender 走同一套背压语义。
