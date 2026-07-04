@@ -153,6 +153,35 @@ wired-progress {
   padding: 2px 6px 2px 2px;
 }
 
+.queue-list {
+  display: grid;
+  gap: 6px;
+  max-height: 104px;
+  overflow: auto;
+  margin-top: 12px;
+  padding-right: 4px;
+}
+
+.queue-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 2px solid #111;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow: hidden;
+  padding: 5px 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-item.selected {
+  color: var(--accent);
+}
+
 .device-panel wired-radio-group {
   display: flex;
   gap: 18px;

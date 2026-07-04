@@ -1,6 +1,6 @@
 {
   "name": "@live2dagenttools/desktop-electron",
-  "version": "1.4.1-v2",
+  "version": "1.4.2-v2",
   "private": true,
   "type": "module",
   "main": "dist/main.js",

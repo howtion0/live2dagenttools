@@ -1,0 +1,161 @@
+{
+  "ok": true,
+  "transport": "ble",
+  "mode": "pi",
+  "inputs": [
+    "/run/media/howtion/thinkplus/1.8/测试音频"
+  ],
+  "files": [
+    {
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_015.wav",
+      "name": "ATR_b102_015.wav",
+      "bytes": 570284,
+      "formatName": "wav",
+      "durationSeconds": 5.94,
+      "bitRate": 768059.0,
+      "audioCodec": "pcm_s16le",
+      "sampleRate": 48000.0,
+      "channels": 1,
+      "route": {
+        "decoder": "ffmpeg",
+        "output": "s16le",
+        "sampleRate": 16000,
+        "channels": 1,
+        "transportBackpressure": "esp32-status-ack"
+      }
+    },
+    {
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_016.wav",
+      "name": "ATR_b102_016.wav",
+      "bytes": 316844,
+      "formatName": "wav",
+      "durationSeconds": 3.3,
+      "bitRate": 768106.0,
+      "audioCodec": "pcm_s16le",
+      "sampleRate": 48000.0,
+      "channels": 1,
+      "route": {
+        "decoder": "ffmpeg",
+        "output": "s16le",
+        "sampleRate": 16000,
+        "channels": 1,
+        "transportBackpressure": "esp32-status-ack"
+      }
+    },
+    {
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_017.wav",
+      "name": "ATR_b102_017.wav",
+      "bytes": 349484,
+      "formatName": "wav",
+      "durationSeconds": 3.64,
+      "bitRate": 768096.0,
+      "audioCodec": "pcm_s16le",
+      "sampleRate": 48000.0,
+      "channels": 1,
+      "route": {
+        "decoder": "ffmpeg",
+        "output": "s16le",
+        "sampleRate": 16000,
+        "channels": 1,
+        "transportBackpressure": "esp32-status-ack"
+      }
+    },
+    {
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_018.wav",
+      "name": "ATR_b102_018.wav",
+      "bytes": 334124,
+      "formatName": "wav",
+      "durationSeconds": 3.48,
+      "bitRate": 768101.0,
+      "audioCodec": "pcm_s16le",
+      "sampleRate": 48000.0,
+      "channels": 1,
+      "route": {
+        "decoder": "ffmpeg",
+        "output": "s16le",
+        "sampleRate": 16000,
+        "channels": 1,
+        "transportBackpressure": "esp32-status-ack"
+      }
+    }
+  ],
+  "results": [
+    {
+      "ok": true,
+      "transport": "ble",
+      "mode": "pi",
+      "bytes": 190080,
+      "packets": 1056,
+      "durationSeconds": 9.202755155998602,
+      "averageBytesPerSecond": 20654.684035150145,
+      "statusUpdates": 51,
+      "finalFree": 131072,
+      "finalFill": 0,
+      "finalReceived": 190080,
+      "finalRead": 190080,
+      "highWater": 88648,
+      "drainComplete": true,
+      "metrics": null,
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_015.wav",
+      "name": "ATR_b102_015.wav"
+    },
+    {
+      "ok": true,
+      "transport": "ble",
+      "mode": "pi",
+      "bytes": 105600,
+      "packets": 587,
+      "durationSeconds": 4.808383059997141,
+      "averageBytesPerSecond": 21961.64462821787,
+      "statusUpdates": 30,
+      "finalFree": 131072,
+      "finalFill": 0,
+      "finalReceived": 105600,
+      "finalRead": 105600,
+      "highWater": 75064,
+      "drainComplete": true,
+      "metrics": null,
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_016.wav",
+      "name": "ATR_b102_016.wav"
+    },
+    {
+      "ok": true,
+      "transport": "ble",
+      "mode": "pi",
+      "bytes": 116480,
+      "packets": 648,
+      "durationSeconds": 5.107679545999417,
+      "averageBytesPerSecond": 22804.876255643874,
+      "statusUpdates": 33,
+      "finalFree": 131072,
+      "finalFill": 0,
+      "finalReceived": 116480,
+      "finalRead": 116480,
+      "highWater": 77684,
+      "drainComplete": true,
+      "metrics": null,
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_017.wav",
+      "name": "ATR_b102_017.wav"
+    },
+    {
+      "ok": true,
+      "transport": "ble",
+      "mode": "pi",
+      "bytes": 111360,
+      "packets": 619,
+      "durationSeconds": 4.926867616999516,
+      "averageBytesPerSecond": 22602.59634656446,
+      "statusUpdates": 32,
+      "finalFree": 131072,
+      "finalFill": 0,
+      "finalReceived": 111360,
+      "finalRead": 111360,
+      "highWater": 75648,
+      "drainComplete": true,
+      "metrics": null,
+      "path": "/run/media/howtion/thinkplus/1.8/测试音频/ATR_b102_018.wav",
+      "name": "ATR_b102_018.wav"
+    }
+  ],
+  "durationSeconds": 25.390236455998092
+}

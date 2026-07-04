@@ -40,7 +40,7 @@
       <section class="topbar">
         <div>
           <h1>Live2D ESP32 音频流发送台</h1>
-          <p>ffmpeg 实时生产 PCM，BLE 消费发送，ESP32 ACK 回传闭环控制。</p>
+          <p>ffmpeg 实时生产 PCM，BLE 或 WiFi/MQTT 消费发送，ESP32 ACK 回传闭环控制。</p>
         </div>
         <span class="scribble-note">live stream<br />bench</span>
         <wired-button id="stopButton" disabled>停止</wired-button>
@@ -52,8 +52,10 @@
           <h2>音频源</h2>
           <div class="row">
             <wired-button id="pickButton">选择音频</wired-button>
+            <wired-button id="pickFolderButton">选择目录</wired-button>
             <span id="fileName" class="muted">未选择</span>
           </div>
+          <div id="queueList" class="queue-list"></div>
           <dl class="meta">
             <div><dt>格式</dt><dd id="formatName">-</dd></div>
             <div><dt>文件大小</dt><dd id="fileBytes">-</dd></div>
@@ -79,7 +81,7 @@
           </div>
           <div id="deviceList" class="device-list"></div>
           <div class="mqtt-fields">
-            <wired-input id="brokerInput" value="mqtt://192.168.1.10:1883" placeholder="mqtt://host:1883"></wired-input>
+            <wired-input id="brokerInput" value="mqtt://192.168.135.73:1883" placeholder="mqtt://host:1883"></wired-input>
             <wired-input id="mqttDeviceInput" value="live2d-atri" placeholder="live2d-atri"></wired-input>
           </div>
         </wired-card>

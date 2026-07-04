@@ -2,6 +2,7 @@ const api = window.live2dAudio;
 
 const state = {
   audio: null,
+  audioList: [],
   selectedDevice: null,
   devices: [],
   running: false,
@@ -11,6 +12,7 @@ const $ = (id) => document.getElementById(id);
 
 const refs = {
   pickButton: $("pickButton"),
+  pickFolderButton: $("pickFolderButton"),
   scanButton: $("scanButton"),
   startButton: $("startButton"),
   stopButton: $("stopButton"),
@@ -21,6 +23,7 @@ const refs = {
   transportGroup: $("transportGroup"),
   modeGroup: $("modeGroup"),
   deviceList: $("deviceList"),
+  queueList: $("queueList"),
   stateText: $("stateText"),
   log: $("log"),
   fillProgress: $("fillProgress"),
@@ -35,10 +38,32 @@ refs.pickButton.addEventListener("click", async () => {
       return;
     }
     state.audio = audio;
+    state.audioList = [audio];
     renderAudio(audio);
+    renderQueue();
     appendLog(`audio ${audio.path}`);
     updateStartButton();
     setStateText("音频已就绪");
+  } catch (error) {
+    showError(error);
+  }
+});
+
+refs.pickFolderButton.addEventListener("click", async () => {
+  try {
+    setStateText("正在扫描目录音频...");
+    const audios = await api.pickAudioFolder();
+    if (!audios.length) {
+      setStateText("目录里没有可发送音频");
+      return;
+    }
+    state.audioList = audios;
+    state.audio = audios[0];
+    renderAudio(audios[0]);
+    renderQueue();
+    appendLog(`audio batch files=${audios.length}`);
+    updateStartButton();
+    setStateText(`队列已就绪：${audios.length} 个文件`);
   } catch (error) {
     showError(error);
   }
@@ -71,7 +96,7 @@ refs.brokerInput.addEventListener("input", updateStartButton);
 
 refs.startButton.addEventListener("click", async () => {
   const transport = refs.transportGroup.selected === "mqtt" ? "mqtt" : "ble";
-  if (!state.audio || (transport === "ble" && !state.selectedDevice)) {
+  if (!state.audioList.length || (transport === "ble" && !state.selectedDevice)) {
     updateStartButton();
     return;
   }
@@ -82,10 +107,11 @@ refs.startButton.addEventListener("click", async () => {
     await api.startAudio({
       transport,
       device: state.selectedDevice?.id || "",
-      inputPath: state.audio.path,
+      inputPath: state.audioList[0].path,
+      inputPaths: state.audioList.map((audio) => audio.path),
       mode: refs.modeGroup.selected === "pi" ? "pi" : "watermark",
       adapter: refs.adapterInput.value || "hci0",
-      broker: refs.brokerInput.value || "mqtt://192.168.1.10:1883",
+      broker: refs.brokerInput.value || "mqtt://192.168.135.73:1883",
       deviceId: refs.mqttDeviceInput.value || "live2d-atri",
     });
     setStateText("发送中");
@@ -123,6 +149,25 @@ function renderAudio(audio) {
   $("mediaSize").textContent = audio.width && audio.height ? `${audio.width} x ${audio.height}` : "纯音频";
 }
 
+function renderQueue() {
+  refs.queueList.textContent = "";
+  if (state.audioList.length <= 1) {
+    return;
+  }
+  for (const [index, audio] of state.audioList.entries()) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `queue-item${state.audio?.path === audio.path ? " selected" : ""}`;
+    item.textContent = `${index + 1}. ${audio.name} · ${formatBytes(audio.bytes)}`;
+    item.addEventListener("click", () => {
+      state.audio = audio;
+      renderAudio(audio);
+      renderQueue();
+    });
+    refs.queueList.appendChild(item);
+  }
+}
+
 function renderDevices() {
   refs.deviceList.textContent = "";
   for (const device of state.devices) {
@@ -144,11 +189,12 @@ function renderDevices() {
 function updateStartButton() {
   const transport = refs.transportGroup.selected === "mqtt" ? "mqtt" : "ble";
   const transportReady = transport === "mqtt" ? Boolean(refs.brokerInput.value) : Boolean(state.selectedDevice);
-  refs.startButton.disabled = !state.audio || !transportReady || state.running;
+  refs.startButton.disabled = !state.audioList.length || !transportReady || state.running;
 }
 
 function setRunningUi(running) {
   refs.pickButton.disabled = running;
+  refs.pickFolderButton.disabled = running;
   refs.scanButton.disabled = running;
   refs.startButton.disabled = running;
   refs.stopButton.disabled = !running;

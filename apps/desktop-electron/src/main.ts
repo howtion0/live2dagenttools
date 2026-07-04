@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,7 +29,8 @@ interface AudioProbe {
 interface StartAudioRequest {
   transport?: "ble" | "mqtt";
   device?: string;
-  inputPath: string;
+  inputPath?: string;
+  inputPaths?: string[];
   mode: "watermark" | "pi";
   adapter?: string;
   broker?: string;
@@ -42,6 +43,8 @@ const repoRoot = path.resolve(appRoot, "../..");
 const rendererRoot = path.join(appRoot, "src/renderer");
 const bleAudioScript = path.join(repoRoot, "scripts/ble_audio_stream.py");
 const mqttAudioScript = path.join(repoRoot, "scripts/mqtt_audio_stream.py");
+const batchAudioScript = path.join(repoRoot, "scripts/audio_batch_stream.py");
+const audioExtensions = new Set([".aac", ".flac", ".m4a", ".mka", ".mkv", ".mp3", ".mp4", ".ogg", ".opus", ".wav", ".webm"]);
 
 let mainWindow: BrowserWindow | undefined;
 let activeSender: ChildProcess | undefined;
@@ -111,6 +114,19 @@ ipcMain.handle("audio:pick", async () => {
   return probeAudio(result.filePaths[0]);
 });
 
+ipcMain.handle("audio:pick-folder", async () => {
+  const options: Electron.OpenDialogOptions = {
+    title: "选择测试音频目录",
+    properties: ["openDirectory"],
+  };
+  const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+  if (result.canceled || result.filePaths.length === 0) {
+    return [];
+  }
+  const files = await listAudioFiles(result.filePaths[0]);
+  return Promise.all(files.map((filePath) => probeAudio(filePath)));
+});
+
 ipcMain.handle("bluetooth:scan", async (_event, adapter: string | undefined) => {
   return scanDevices(adapter || "hci0", 5);
 });
@@ -119,8 +135,9 @@ ipcMain.handle("audio:start", async (_event, request: StartAudioRequest) => {
   if (activeSender) {
     throw new Error("已有发送任务在运行");
   }
-  if (!request.inputPath) {
-    throw new Error("inputPath 必填");
+  const inputPaths = request.inputPaths?.length ? request.inputPaths : request.inputPath ? [request.inputPath] : [];
+  if (inputPaths.length === 0) {
+    throw new Error("inputPath/inputPaths 必填");
   }
   if ((request.transport ?? "ble") === "ble" && !request.device) {
     throw new Error("BLE device 必填");
@@ -128,7 +145,7 @@ ipcMain.handle("audio:start", async (_event, request: StartAudioRequest) => {
   if (request.transport === "mqtt" && !request.broker) {
     throw new Error("MQTT broker 必填");
   }
-  await stat(request.inputPath);
+  await Promise.all(inputPaths.map((inputPath) => stat(inputPath)));
   startSender(request);
   return { ok: true };
 });
@@ -178,9 +195,33 @@ async function probeAudio(inputPath: string): Promise<AudioProbe> {
   };
 }
 
+async function listAudioFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && audioExtensions.has(path.extname(entry.name).toLowerCase()))
+    .map((entry) => path.join(directory, entry.name))
+    .sort((a, b) => path.basename(a).localeCompare(path.basename(b)));
+  return files;
+}
+
 function startSender(request: StartAudioRequest): void {
   const transport = request.transport ?? "ble";
-  const args: string[] = transport === "mqtt"
+  const inputPaths = request.inputPaths?.length ? request.inputPaths : request.inputPath ? [request.inputPath] : [];
+  const batch = inputPaths.length > 1;
+  const args: string[] = batch
+    ? [
+        batchAudioScript,
+        "--transport",
+        transport,
+        "--mode",
+        request.mode,
+        "--progress-json",
+        ...(transport === "mqtt"
+          ? ["--broker", request.broker || "", "--device-id", request.deviceId || "live2d-atri"]
+          : ["--device", request.device || "", "--adapter", request.adapter || "hci0"]),
+        ...inputPaths,
+      ]
+    : transport === "mqtt"
     ? [
         mqttAudioScript,
         "--broker",
@@ -188,7 +229,7 @@ function startSender(request: StartAudioRequest): void {
         "--device-id",
         request.deviceId || "live2d-atri",
         "--input",
-        request.inputPath,
+        inputPaths[0],
         "--mode",
         request.mode,
         "--progress-json",
@@ -198,7 +239,7 @@ function startSender(request: StartAudioRequest): void {
         "--device",
         request.device || "",
         "--input",
-        request.inputPath,
+        inputPaths[0],
         "--mode",
         request.mode,
         "--adapter",

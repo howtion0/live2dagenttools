@@ -1,6 +1,6 @@
 # live2dagenttools
 
-Version: `1.4.1-v2`
+Version: `1.4.2-v2`
 
 Live2D Agent 的跨平台交互工具集。目标是把“控制 ESP32 Live2D 设备”的业务逻辑写成可复用 TypeScript 内核，再按平台替换 transport：
 

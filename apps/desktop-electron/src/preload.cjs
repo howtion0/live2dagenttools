@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 const api = {
   pickAudio: () => ipcRenderer.invoke("audio:pick"),
+  pickAudioFolder: () => ipcRenderer.invoke("audio:pick-folder"),
   scanDevices: (adapter) => ipcRenderer.invoke("bluetooth:scan", adapter),
   startAudio: (request) => ipcRenderer.invoke("audio:start", request),
   stopAudio: () => ipcRenderer.invoke("audio:stop"),

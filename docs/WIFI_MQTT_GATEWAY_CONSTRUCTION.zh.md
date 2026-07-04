@@ -1,6 +1,6 @@
 # Live2D ESP32 WiFi/MQTT Gateway 施工文档
 
-版本：`1.4.1-v2`
+版本：`1.4.2-v2`
 起点：tools `v1.1` 已推送到 GitHub，提交 `71bc2d7`
 当前硬件目标：Waveshare ESP32-S3-Touch-AMOLED-1.8 V2。V1 记录保留；当前 GitHub tag/release 使用 V2 后缀。
 
@@ -275,8 +275,19 @@ metrics csv/json
 
 ### 2026-07-04 V2 BLE + WiFi/MQTT sender backpressure
 
-- tools 版本：`1.4.1-v2`。
-- 配套 ESP32 固件版本：`1.4.1-v2`。
+- tools 版本：`1.4.2-v2`。
+- 配套 ESP32 固件版本：`1.4.2-v2`。
 - BLE sender 补齐与 MQTT sender 相同的 START ACK 等待和 END drain 等待。
 - BLE/MQTT sender 都从 ESP32 status ACK 读取 `free/fill/received/read/high_water/active/finished`，再决定 DATA 发送节奏。
 - GUI 的 BLE / WiFi MQTT transport 选择保留；选择哪个 transport，就由对应 sender 走同一套背压语义。
+
+### 2026-07-05 V2 audio directory batch sender
+
+- 新增 `scripts/audio_batch_stream.py`，先用 `ffprobe` 扫描音频文件/目录，再为每个文件构建 `ffmpeg -> s16le mono 16 kHz -> ACK backpressure sender` 路线。
+- 新增 `npm run audio:batch`。
+- Electron GUI 新增“选择目录”，可把目录内音频作为队列顺序发送。
+- Electron GUI 的 transport 选择继续支持 BLE / WiFi MQTT；单文件走原 sender，多个文件走 batch sender。
+- 本机目录 `/run/media/howtion/thinkplus/1.8/测试音频` 当前 4 个 WAV 已全量测试：
+  - MQTT manifest：`experiments/audio-flow/v1.4.2-v2/batch-mqtt-wavs.json`
+  - BLE manifest：`experiments/audio-flow/v1.4.2-v2/batch-ble-wavs.json`
+  - 两个 manifest 均为 `ok=true`，`files=4`，`results=4`，所有结果 `drainComplete=true`。

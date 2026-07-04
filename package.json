@@ -1,6 +1,6 @@
 {
   "name": "live2dagenttools",
-  "version": "1.4.1-v2",
+  "version": "1.4.2-v2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "cli": "npm run build && node --enable-source-maps dist/apps/cli/src/index.js",
     "audio:send": "python3 scripts/ble_audio_stream.py",
     "audio:mqtt": "python3 scripts/mqtt_audio_stream.py",
+    "audio:batch": "python3 scripts/audio_batch_stream.py",
     "audio:plot": "python3 scripts/plot_audio_metrics.py",
     "android:install": "cd apps/android && npm install --no-bin-links",
     "android:init": "cd apps/android && npm install --no-bin-links && node node_modules/@capacitor/cli/bin/capacitor add android",
