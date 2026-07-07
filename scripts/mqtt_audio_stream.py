@@ -191,13 +191,14 @@ class MqttClient:
         self.packet_id = 1
         self.error_lock = threading.Lock()
         self.error: str | None = None
+        self.keepalive = 30.0
+        self.last_tx = 0.0
 
     def connect(self) -> None:
         self.sock = socket.create_connection((self.host, self.port), timeout=10)
         self.sock.settimeout(1.0)
         flags = 0x02
-        keepalive = 30
-        payload = _mqtt_string("MQTT") + bytes([0x04, flags]) + struct.pack("!H", keepalive) + _mqtt_string(self.client_id)
+        payload = _mqtt_string("MQTT") + bytes([0x04, flags]) + struct.pack("!H", int(self.keepalive)) + _mqtt_string(self.client_id)
         self._send_packet(0x10, payload)
         packet_type, body = self._read_packet()
         if packet_type != 0x20 or len(body) < 2 or body[1] != 0:
@@ -218,6 +219,11 @@ class MqttClient:
         self.raise_if_failed()
         body = _mqtt_string(topic) + payload
         self._send_packet(0x30, body)
+
+    def keepalive_ping(self) -> None:
+        self.raise_if_failed()
+        if time.monotonic() - self.last_tx >= self.keepalive / 2:
+            self._send_packet(0xC0, b"")
 
     def raise_if_failed(self) -> None:
         with self.error_lock:
@@ -249,6 +255,7 @@ class MqttClient:
         packet = bytes([header]) + _mqtt_remaining_length(len(body)) + body
         with self.lock:
             self.sock.sendall(packet)
+            self.last_tx = time.monotonic()
 
     def _read_packet(self) -> tuple[int, bytes]:
         if not self.sock:
@@ -319,6 +326,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--integral-limit", type=float, default=4_000_000.0)
     parser.add_argument("--start-ack-timeout", type=float, default=10.0, help="Seconds to wait for ESP32 status ACK after START")
     parser.add_argument("--drain-timeout", type=float, default=20.0, help="Seconds to wait for final ESP32 drain ACK after END")
+    parser.add_argument(
+        "--status-stall-timeout",
+        type=float,
+        default=15.0,
+        help="Fail when ESP32 audio/status stops updating while bytes remain unacknowledged; 0 disables",
+    )
     return parser.parse_args()
 
 
@@ -372,6 +385,23 @@ def main() -> None:
             inferred_fill = max(0, current.received - inferred_read)
             free = min(capacity, capacity - inferred_fill)
         return outstanding, max(0, free - outstanding)
+
+    def fail_if_status_stalled(current: StatusState, label: str) -> None:
+        if args.status_stall_timeout <= 0 or current.updates <= 0 or current.updated_at <= 0.0:
+            return
+        outstanding = max(0, sent - current.received)
+        unread = max(0, current.received - current.read)
+        if outstanding <= 0 and unread <= 0 and current.fill <= 0:
+            return
+        idle_s = time.monotonic() - current.updated_at
+        if idle_s < args.status_stall_timeout:
+            return
+        write_metric("status_stall", pi.last_budget if args.mode == "pi" else 0.0)
+        raise RuntimeError(
+            "ESP32 audio/status stalled "
+            f"during {label} for {idle_s:.1f}s "
+            f"sent={sent} received={current.received} read={current.read} fill={current.fill} active={current.active}"
+        )
 
     def write_metric(event: str, controller_budget: float = 0.0) -> None:
         current = snapshot()
@@ -446,6 +476,7 @@ def main() -> None:
         deadline = time.monotonic() + max(0.0, timeout_s)
         while time.monotonic() < deadline:
             mqtt.raise_if_failed()
+            mqtt.keepalive_ping()
             if snapshot().updates > previous_updates:
                 return
             time.sleep(args.tick_ms / 1000.0)
@@ -455,7 +486,9 @@ def main() -> None:
         nonlocal sent, packets, seq, wait_count, pace_started_at, pace_sent_base
         while True:
             mqtt.raise_if_failed()
+            mqtt.keepalive_ping()
             current = snapshot()
+            fail_if_status_stalled(current, "send")
             _, effective_free = estimate_effective_free(current)
             budget = pi.update(current.fill) if args.mode == "pi" else 0.0
             has_credit = effective_free >= len(payload) + args.safety_margin
@@ -476,6 +509,8 @@ def main() -> None:
             target_elapsed = (sent - pace_sent_base + len(payload)) / args.max_send_bps
             sleep_until = pace_started_at + target_elapsed
             while True:
+                mqtt.keepalive_ping()
+                fail_if_status_stalled(snapshot(), "pace")
                 remaining = sleep_until - time.monotonic()
                 if remaining <= 0:
                     break
@@ -560,7 +595,9 @@ def main() -> None:
         drain_deadline = time.monotonic() + max(0.0, args.drain_timeout)
         drain_samples = 0
         while time.monotonic() < drain_deadline:
+            mqtt.keepalive_ping()
             current = snapshot()
+            fail_if_status_stalled(current, "drain")
             if current.received >= sent and current.read >= sent and current.fill == 0 and current.active == 0:
                 drain_complete = True
                 write_metric("drain", pi.last_budget if args.mode == "pi" else 0.0)

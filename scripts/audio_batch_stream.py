@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--transport", choices=["ble", "mqtt"], required=True)
     parser.add_argument("--device", help="BLE MAC address")
     parser.add_argument("--adapter", default="hci0")
-    parser.add_argument("--broker", default="mqtt://192.168.135.73:1883")
+    parser.add_argument("--broker", default="mqtt://192.168.11.73:1883")
     parser.add_argument("--device-id", default="live2d-atri")
     parser.add_argument("--mode", choices=["watermark", "pi"], default="pi")
     parser.add_argument("--recursive", action="store_true", help="Recurse into input directories")
@@ -42,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--progress-json", action="store_true", help="Print newline-delimited progress JSON")
     parser.add_argument("--start-ack-timeout", type=float, default=20.0)
     parser.add_argument("--drain-timeout", type=float, default=180.0)
+    parser.add_argument("--status-stall-timeout", type=float, default=15.0)
     return parser.parse_args()
 
 
@@ -119,6 +120,8 @@ def build_sender_args(args: argparse.Namespace, file_path: Path, index: int) -> 
             str(args.drain_timeout),
         ]
     )
+    if args.transport == "mqtt":
+        cmd.extend(["--status-stall-timeout", str(args.status_stall_timeout)])
     if args.metrics_dir:
         metrics_path = Path(args.metrics_dir) / f"{index:03d}-{file_path.stem}-{args.transport}.csv"
         cmd.extend(["--metrics", str(metrics_path)])

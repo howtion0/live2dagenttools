@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "live2dagenttools": {
+      "command": "node",
+      "args": [
+        "/run/media/howtion/thinkplus/1.8/live2dagenttools/MCP/server.js"
+      ]
+    }
+  }
+}

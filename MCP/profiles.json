@@ -1,0 +1,20 @@
+{
+  "defaultProfile": "live2d-atri",
+  "profiles": [
+    {
+      "name": "live2d-atri",
+      "description": "Default ESP32 Live2D ATRI target from the V2 construction docs.",
+      "deviceId": "live2d-atri",
+      "mqttBroker": "mqtt://192.168.11.73:1883",
+      "suggestedLanBroker": "mqtt://192.168.11.73:1883",
+      "bleDeviceName": "esplive2d",
+      "bleDevice": "28:84:85:90:B2:2E",
+      "adapter": "hci0",
+      "serialPort": "/dev/ttyACM0",
+      "audioRoots": [
+        "/run/media/howtion/thinkplus/1.8/测试音频",
+        "/run/media/howtion/thinkplus/1.8"
+      ]
+    }
+  ]
+}
