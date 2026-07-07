@@ -79,15 +79,14 @@ Real audio playback status:
 - WiFi/MQTT real send is proven after updating ESP32 broker to
   `mqtt://192.168.11.73:1883`: `ATR_b102_015.wav` sent successfully,
   `190080` bytes, drain complete.
-- WiFi/MQTT long MP3 streaming is currently unstable on the ESP32 side.
+- WiFi/MQTT long MP3 streaming is proven with the ESP32 audio starvation fix:
   `/run/media/howtion/thinkplus/1.8/测试音频/04.mp3` is a `256.7` second,
-  `16 kHz`, mono MP3 that decodes to about `8.2 MB` of PCM. Earlier keepalive
-  fixes prevent MQTT keepalive disconnects, but the latest Claude/MCP run with
-  `statusStallTimeout: 15` failed at `sent=5676480`, `received=5570100`,
-  `read=5477044`, `fill=93056`, `active=1`: ESP32 `audio/status` stopped
-  advancing for 15 seconds while the firmware main loop still logged normally.
-  Treat this as ESP32 audio pipeline/state-machine starvation, not ffmpeg or MCP
-  deadlock.
+  `16 kHz`, mono MP3 that decodes to `8214640` bytes of PCM. Direct tools
+  (`scripts/mqtt_audio_stream.py`) passed with `finalReceived=8214640`,
+  `finalRead=8214640`, `finalFill=0`, `drainComplete=true`. MCP `send_audio`
+  also passed with the same final counters. `statusStallTimeout` remains a
+  regression guard so future ESP32-side stalls fail clearly instead of waiting
+  for the outer timeout.
 - WiFi/MQTT association is proven after pressing PWR:
   `wifi connected ssid=FMai ip=192.168.11.159`.
 - WiFi/MQTT broker is proven:
@@ -100,8 +99,8 @@ Real audio playback status:
 For WiFi/MQTT:
 
 1. Keep local mosquitto running on this machine.
-2. Press ESP32 `PWR` after reset to start BLE/WiFi. The firmware otherwise logs
-   `wireless idle; press PWR to start BLE/WiFi`.
+2. Current ESP32 firmware auto-starts BLE/WiFi about 8 seconds after boot. Press
+   ESP32 `PWR` only when you want to start/reconnect immediately.
 3. Ensure ESP32 broker configuration points to this machine's LAN broker:
    `mqtt://192.168.11.73:1883`.
 4. Re-run:
@@ -115,10 +114,9 @@ npm run mcp:claude-smoke
 5. When smoke reports `readyForRealAudio: true`, call `play_audio_intent` with
    `dryRun: false`.
 
-6. For long audio such as `04.mp3`, prefer short regression tests first. If
-   Claude/MCP reports `ESP32 audio/status stalled`, the tool layer worked: the
-   sender detected that ESP32 stopped consuming the current stream and cancelled
-   instead of waiting indefinitely.
+6. For long audio such as `04.mp3`, use `statusStallTimeout` as a guard. Passing
+   evidence is in `MCP/runs/tools-04-after-fix.json` and
+   `MCP/runs/mcp-04-after-fix.json`.
 
 For BLE:
 

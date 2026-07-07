@@ -34,6 +34,9 @@ For MQTT sends, `send_audio`, `batch_send_audio`, and `play_audio_intent` also
 accept `statusStallTimeout` in seconds. This fails a stream when ESP32
 `audio/status` stops advancing while bytes remain buffered, so Claude gets a
 clear ESP32-side stall error instead of waiting for the outer command timeout.
+After the ESP32 audio starvation fix, `04.mp3` has passed both direct tools and
+MCP sends with `finalReceived=finalRead=8214640`, `finalFill=0`, and
+`drainComplete=true`.
 
 For normal Claude use, prefer `play_audio_intent` first. It lets Claude say
 "play ATR_b102_015 over auto/mqtt/ble" without manually resolving the file path
@@ -224,9 +227,8 @@ WiFi/MQTT real playback needs both sides on the same broker:
 - `start_local_mqtt_broker` can start mosquitto on this machine, but ESP32 must
   be configured to connect to this machine's LAN IP for playback to work.
 - Long streams can expose ESP32-side audio starvation even when short WAV files
-  pass. `04.mp3` decodes to several MB of PCM; if its `read` counter stops while
-  `fill` stays high, the problem is ESP32 audio consumption/state cleanup, not
-  ffmpeg or MCP command framing.
+  pass. `04.mp3` now passes with the current ESP32 firmware, and
+  `statusStallTimeout` remains in the sender as a regression guard.
 - `stop_local_mqtt_broker` refuses to stop unrelated brokers on the same port.
 
 BLE real playback needs BlueZ:
