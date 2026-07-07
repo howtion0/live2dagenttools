@@ -1,0 +1,4 @@
+MCP/runs/
+__pycache__/
+*.pyc
+.env

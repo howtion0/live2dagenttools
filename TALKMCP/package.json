@@ -1,0 +1,14 @@
+{
+  "name": "talkmcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mcp": "node MCP/server.js",
+    "mcp:call": "node MCP/call-tool.js",
+    "voice:session": "sh scripts/claude_voice_session.sh",
+    "voice:ask": "sh scripts/claude_voice_session.sh",
+    "smoke": "node MCP/smoke-test.js",
+    "check": "node --check MCP/server.js && node --check MCP/call-tool.js && node --check MCP/smoke-test.js && python3 -m py_compile scripts/volc_tts_mqtt_stream.py scripts/volc_tts_mp3_stream.py scripts/mqtt_audio_stream.py scripts/ble_audio_stream.py"
+  }
+}

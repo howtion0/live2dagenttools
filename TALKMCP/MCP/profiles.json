@@ -1,0 +1,12 @@
+{
+  "profiles": [
+    {
+      "name": "live2d-atri",
+      "deviceId": "live2d-atri",
+      "broker": "mqtt://192.168.11.73:1883",
+      "bleDevice": "28:84:85:90:B2:2E",
+      "adapter": "hci0",
+      "serialPort": "/dev/ttyACM0"
+    }
+  ]
+}

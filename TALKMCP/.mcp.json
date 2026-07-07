@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "TALKMCP": {
+      "command": "node",
+      "args": [
+        "/run/media/howtion/thinkplus/1.8/live2dagenttools/TALKMCP/MCP/server.js"
+      ],
+      "cwd": "/run/media/howtion/thinkplus/1.8/live2dagenttools/TALKMCP"
+    }
+  }
+}
